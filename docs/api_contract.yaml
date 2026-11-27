@@ -1,0 +1,582 @@
+openapi: 3.1.0
+info:
+  title: Votaa — reference REST contract
+  version: 0.1.0
+  description: |
+    What a server must answer for the app to work without modification
+    (BACKEND=rest). Implemented by `lib/features/*/data/rest/`.
+
+    Conventions:
+    * JSON, UTF-8, dates in ISO 8601 UTC, ids are `[A-Za-z0-9_-]{1,64}`.
+    * Every response carries `X-Request-Id` (shown to users for support).
+    * Errors use the `Error` schema and the status codes below.
+    * Lists are cursor-paginated (`cursor`, `limit`) and return `next_cursor`.
+    * Authenticated calls send `Authorization: Bearer <access_token>`.
+      On 401 the app calls `/auth/refresh` once and replays the request.
+    * Sensitive writes send `Idempotency-Key` (UUID). The same key must
+      return the same result without performing the action twice.
+servers:
+  - url: https://api.example.org/v1
+security:
+  - bearer: []
+
+paths:
+  /health:
+    get:
+      security: []
+      summary: Reachability probe (offline banner)
+      responses:
+        '200': { description: OK }
+
+  /auth/sign-in:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_id]
+              properties:
+                email: { type: string }
+                password: { type: string }
+                device_id: { type: string, description: Random id of the install }
+      responses:
+        '200': { $ref: '#/components/responses/AuthResult' }
+        '401': { $ref: '#/components/responses/Error', description: '`invalid_credentials` or `account_locked`' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/sign-up:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, email, password, date_of_birth, accepted_terms, device_id]
+              properties:
+                first_name: { type: string }
+                last_name: { type: string }
+                email: { type: string }
+                password: { type: string, minLength: 8 }
+                date_of_birth: { type: string, format: date }
+                accepted_terms: { type: boolean }
+                device_id: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/AuthResult' }
+        '422':
+          $ref: '#/components/responses/Error'
+          description: 'Field keys: first_name, last_name, email, password, date_of_birth, accepted_terms'
+
+  /auth/password-reset:
+    post:
+      tags: [auth]
+      security: []
+      description: Always 204 for a well-formed email (never reveals if an account exists).
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { email: { type: string } } }
+      responses:
+        '204': { description: Sent if the account exists }
+        '422': { $ref: '#/components/responses/Error' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      description: Refresh tokens are single-use. Any 401 here signs the user out.
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { refresh_token: { type: string } } }
+      responses:
+        '200':
+          description: New tokens
+          content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } }
+        '401': { $ref: '#/components/responses/Error', description: '`session_ended`' }
+
+  /auth/sign-out:
+    post:
+      tags: [auth]
+      responses: { '204': { description: Session revoked } }
+
+  /me:
+    get:
+      tags: [auth]
+      responses:
+        '200':
+          description: Signed-in user
+          content: { application/json: { schema: { $ref: '#/components/schemas/User' } } }
+        '401': { $ref: '#/components/responses/Error' }
+
+  /home:
+    get:
+      tags: [home]
+      responses:
+        '200':
+          description: Everything the home screen shows
+          content: { application/json: { schema: { $ref: '#/components/schemas/HomeFeed' } } }
+
+  /me/citizen-id:
+    get:
+      tags: [identity]
+      responses:
+        '200':
+          description: Digital ID
+          content: { application/json: { schema: { $ref: '#/components/schemas/CitizenId' } } }
+  /me/citizen-id/presentation-codes:
+    post:
+      tags: [identity]
+      responses:
+        '201':
+          description: Short-lived QR payload
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [payload, expires_at]
+                properties:
+                  payload: { type: string }
+                  expires_at: { type: string, format: date-time }
+  /me/citizen-id/shares:
+    post:
+      tags: [identity]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fields:
+                  type: array
+                  items: { type: string, enum: [full_name, date_of_birth, verification_status, address] }
+      responses:
+        '201':
+          description: Share link
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, code, expires_at, fields]
+                properties:
+                  url: { type: string }
+                  code: { type: string }
+                  expires_at: { type: string, format: date-time }
+                  fields: { type: array, items: { type: string } }
+        '422': { $ref: '#/components/responses/Error' }
+  /me/citizen-id/contact:
+    patch:
+      tags: [identity]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { phone: { type: string }, address: { type: string } }
+      responses:
+        '200':
+          description: Updated ID
+          content: { application/json: { schema: { $ref: '#/components/schemas/CitizenId' } } }
+        '422': { $ref: '#/components/responses/Error', description: 'Field keys: phone, address' }
+  /me/citizen-id/settings:
+    patch:
+      tags: [identity]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { biometric_protection: { type: boolean } } }
+      responses:
+        '200':
+          description: Updated ID
+          content: { application/json: { schema: { $ref: '#/components/schemas/CitizenId' } } }
+  /verifications:
+    post:
+      tags: [identity]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { code: { type: string } } }
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid: { type: boolean }
+                  full_name: { type: [string, 'null'] }
+                  status: { $ref: '#/components/schemas/IdStatus' }
+        '422': { $ref: '#/components/responses/Error', description: 'Field key: code' }
+
+  /notifications:
+    get:
+      tags: [notifications]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }, { $ref: '#/components/parameters/Limit' }]
+      responses:
+        '200':
+          description: Newest first
+          content: { application/json: { schema: { $ref: '#/components/schemas/NotificationPage' } } }
+  /notifications/unread-count:
+    get:
+      tags: [notifications]
+      responses:
+        '200':
+          description: Unread count
+          content: { application/json: { schema: { type: object, properties: { count: { type: integer } } } } }
+  /notifications/{id}/read:
+    post:
+      tags: [notifications]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '204': { description: Marked read } }
+  /notifications/read-all:
+    post:
+      tags: [notifications]
+      responses: { '204': { description: All marked read } }
+
+  /activity:
+    get:
+      tags: [activity]
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+        - name: kind
+          in: query
+          schema: { type: string, enum: [identity, civic, security, service] }
+      responses:
+        '200':
+          description: Newest first
+          content: { application/json: { schema: { $ref: '#/components/schemas/ActivityPage' } } }
+
+  /elections:
+    get:
+      tags: [elections]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }, { $ref: '#/components/parameters/Limit' }]
+      responses:
+        '200':
+          description: Upcoming (soonest first) then past (latest first)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ElectionPage' } } }
+  /elections/{id}:
+    get:
+      tags: [elections]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: Election, content: { application/json: { schema: { $ref: '#/components/schemas/Election' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /elections/{id}/reminder:
+    post:
+      tags: [elections]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { enabled: { type: boolean } } } } }
+      responses:
+        '200': { description: Election, content: { application/json: { schema: { $ref: '#/components/schemas/Election' } } } }
+        '409': { $ref: '#/components/responses/Error', description: Election over }
+
+  /petitions:
+    get:
+      tags: [petitions]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }, { $ref: '#/components/parameters/Limit' }]
+      responses:
+        '200':
+          description: Open first (most signed first), then the others
+          content: { application/json: { schema: { $ref: '#/components/schemas/PetitionPage' } } }
+  /petitions/{id}:
+    get:
+      tags: [petitions]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: Petition, content: { application/json: { schema: { $ref: '#/components/schemas/Petition' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+  /petitions/{id}/signatures:
+    post:
+      tags: [petitions]
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      responses:
+        '201': { description: Updated petition, content: { application/json: { schema: { $ref: '#/components/schemas/Petition' } } } }
+        '409': { $ref: '#/components/responses/Error', description: Closed or already signed }
+
+  /documents:
+    get:
+      tags: [documents]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }, { $ref: '#/components/parameters/Limit' }]
+      responses:
+        '200': { description: Documents, content: { application/json: { schema: { $ref: '#/components/schemas/DocumentPage' } } } }
+  /documents/{id}:
+    get:
+      tags: [documents]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: Document, content: { application/json: { schema: { $ref: '#/components/schemas/Document' } } } }
+
+  /services:
+    get:
+      tags: [services]
+      parameters: [{ $ref: '#/components/parameters/Cursor' }, { $ref: '#/components/parameters/Limit' }]
+      responses:
+        '200': { description: Services, content: { application/json: { schema: { $ref: '#/components/schemas/ServicePage' } } } }
+  /services/{id}:
+    get:
+      tags: [services]
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: Service, content: { application/json: { schema: { $ref: '#/components/schemas/Service' } } } }
+  /services/{id}/requests:
+    post:
+      tags: [services]
+      parameters: [{ $ref: '#/components/parameters/Id' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { note: { type: string, maxLength: 500 } } } } }
+      responses:
+        '201':
+          description: Request created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [reference, service_id, created_at, status]
+                properties:
+                  reference: { type: string }
+                  service_id: { type: string }
+                  created_at: { type: string, format: date-time }
+                  status: { type: string, enum: [received, in_progress, done] }
+        '409': { $ref: '#/components/responses/Error', description: In person only }
+        '422': { $ref: '#/components/responses/Error', description: 'Field key: note' }
+
+  /search:
+    get:
+      tags: [search]
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: At most 30 results, best first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [kind, id, title]
+                      properties:
+                        kind: { type: string, enum: [election, petition, document, service] }
+                        id: { type: string }
+                        title: { type: string }
+                        subtitle: { type: [string, 'null'] }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
+
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,64}$' } }
+    Cursor: { name: cursor, in: query, schema: { type: string } }
+    Limit: { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+
+  responses:
+    Error:
+      description: Error
+      headers: { X-Request-Id: { schema: { type: string } } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Too many requests
+      headers: { Retry-After: { schema: { type: integer }, description: Seconds } }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    AuthResult:
+      description: Signed in
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [session, user]
+            properties:
+              session: { $ref: '#/components/schemas/Session' }
+              user: { $ref: '#/components/schemas/User' }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+              description: validation_failed, invalid_credentials, account_locked, session_ended, unauthenticated, not_found, conflict, rate_limited, server_error
+            message: { type: string, description: Plain sentence, may be shown to the user }
+            fields:
+              type: object
+              additionalProperties: { type: string }
+              description: Field name -> message shown under that field
+    Session:
+      type: object
+      required: [user_id, access_token, refresh_token, expires_in]
+      properties:
+        user_id: { type: string }
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, description: Seconds before the access token expires }
+    User:
+      type: object
+      required: [id, first_name, last_name, email]
+      properties:
+        id: { type: string }
+        first_name: { type: string }
+        last_name: { type: string }
+        email: { type: string }
+    IdStatus: { type: string, enum: [verified, pending, suspended], description: Unknown values are shown as "pending" }
+    CitizenId:
+      type: object
+      required: [first_name, last_name, date_of_birth, number_last4, status, issued_at, expires_at, email]
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        date_of_birth: { type: string, format: date }
+        number_last4: { type: string, description: The full number never leaves the server }
+        status: { $ref: '#/components/schemas/IdStatus' }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        email: { type: string }
+        phone: { type: [string, 'null'] }
+        address: { type: [string, 'null'] }
+        biometric_protection: { type: boolean }
+    HomeFeed:
+      type: object
+      required: [first_name, last_name, id_last4, id_verified]
+      properties:
+        first_name: { type: string }
+        last_name: { type: string }
+        id_last4: { type: string }
+        id_verified: { type: boolean }
+        next_election:
+          type: [object, 'null']
+          properties: { id: { type: string }, title: { type: string }, date: { type: string, format: date-time } }
+        featured_petition:
+          type: [object, 'null']
+          properties: { id: { type: string }, title: { type: string }, signatures: { type: integer }, goal: { type: integer } }
+    Notification:
+      type: object
+      required: [id, kind, title, body, created_at, read]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [election, petition, identity, security, service] }
+        title: { type: string }
+        body: { type: string }
+        created_at: { type: string, format: date-time }
+        read: { type: boolean }
+        target_id: { type: [string, 'null'] }
+    ActivityEntry:
+      type: object
+      required: [id, kind, title, detail, created_at]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [identity, civic, security, service] }
+        title: { type: string }
+        detail: { type: string }
+        created_at: { type: string, format: date-time }
+        reference: { type: [string, 'null'] }
+        place: { type: [string, 'null'] }
+    Election:
+      type: object
+      required: [id, title, level, status, date, description]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        level: { type: string, enum: [municipal, regional, national, referendum] }
+        status: { type: string, enum: [upcoming, open, closed] }
+        date: { type: string, format: date-time }
+        description: { type: string }
+        polling_station: { type: [string, 'null'] }
+        candidates:
+          type: array
+          items: { type: object, properties: { name: { type: string }, party: { type: [string, 'null'] } } }
+        reminder_set: { type: boolean }
+    Petition:
+      type: object
+      required: [id, title, summary, author, signatures, goal, status, deadline]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        author: { type: string }
+        signatures: { type: integer }
+        goal: { type: integer }
+        status: { type: string, enum: [open, closed, successful] }
+        deadline: { type: string, format: date-time }
+        signed_by_me: { type: boolean }
+        category: { type: [string, 'null'] }
+    Document:
+      type: object
+      required: [id, type, title, status, issuer, issued_at]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [passport, driving_licence, birth_certificate, residence, tax_notice] }
+        title: { type: string }
+        status: { type: string, enum: [valid, expiring_soon, expired, pending] }
+        issuer: { type: string }
+        issued_at: { type: string, format: date-time }
+        number_last4: { type: [string, 'null'] }
+        expires_at: { type: [string, 'null'], format: date-time }
+    Service:
+      type: object
+      required: [id, title, category, description, processing_days, online]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        category: { type: string, enum: [identity, family, housing, transport, tax, other] }
+        description: { type: string }
+        processing_days: { type: integer }
+        online: { type: boolean }
+    NotificationPage: { $ref: '#/components/schemas/PageOfNotification' }
+    PageOfNotification:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        next_cursor: { type: [string, 'null'] }
+    ActivityPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ActivityEntry' } }
+        next_cursor: { type: [string, 'null'] }
+    ElectionPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Election' } }
+        next_cursor: { type: [string, 'null'] }
+    PetitionPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Petition' } }
+        next_cursor: { type: [string, 'null'] }
+    DocumentPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Document' } }
+        next_cursor: { type: [string, 'null'] }
+    ServicePage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Service' } }
+        next_cursor: { type: [string, 'null'] }

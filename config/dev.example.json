@@ -1,0 +1,6 @@
+{
+  "BACKEND": "rest",
+  "API_BASE_URL": "https://api.example.org/v1",
+  "SUPPORT_EMAIL": "support@example.org",
+  "APP_NAME": "Votaa"
+}

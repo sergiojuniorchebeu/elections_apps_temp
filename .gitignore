@@ -62,3 +62,6 @@ GoogleService-Info.plist
 *.p12
 *.mobileprovision
 service-account*.json
+
+# Golden test failure output
+test/**/failures/

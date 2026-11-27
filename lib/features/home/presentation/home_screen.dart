@@ -106,7 +106,7 @@ class _HomeContent extends ConsumerWidget {
               ),
             ),
             CircleIconButton(
-              icon: Icons.search_rounded,
+              icon: AppIcons.search,
               semanticLabel: CommonStrings.search,
               onPressed: () => context.push(Routes.search),
             ),
@@ -168,10 +168,10 @@ class _Shortcuts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.description_outlined, HomeStrings.documents, Routes.documents),
-      (Icons.grid_view_outlined, HomeStrings.services, Routes.services),
-      (Icons.how_to_vote_outlined, HomeStrings.elections, Routes.elections),
-      (Icons.article_outlined, HomeStrings.petitions, Routes.petitions),
+      (AppIcons.documents, HomeStrings.documents, Routes.documents),
+      (AppIcons.services, HomeStrings.services, Routes.services),
+      (AppIcons.elections, HomeStrings.elections, Routes.elections),
+      (AppIcons.petitions, HomeStrings.petitions, Routes.petitions),
     ];
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -196,7 +196,7 @@ class _Shortcuts extends StatelessWidget {
                   child: ExcludeSemantics(
                     child: Column(
                       children: [
-                        Icon(icon, color: context.colors.primary, size: AppSizes.iconLg),
+                        AppIcon(icon, color: context.colors.primary, size: AppSizes.iconLg),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           label,
@@ -287,7 +287,7 @@ class _PetitionCard extends StatelessWidget {
                       color: c.surface,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
-                    child: Icon(Icons.article_outlined, color: c.primary),
+                    child: AppIcon(AppIcons.petitions, color: c.primary),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(

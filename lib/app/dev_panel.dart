@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../core/core_providers.dart';
+import '../core/services/social_sign_in.dart';
 import '../core/state/session_scope.dart';
 import '../design_system/design_system.dart';
 import '../l10n/strings.dart';
+import '../mock/mock_accounts.dart';
 import '../mock/mock_providers.dart';
 import '../mock/scenario.dart';
 import 'router/app_router.dart';
@@ -150,4 +152,51 @@ Future<bool> simulatedBiometricPrompt(String reason) async {
     ),
   );
   return result ?? false;
+}
+
+/// Demo mode "Continue with Apple / Google": a consent sheet instead of
+/// the provider's own screen. Continue signs in as the demo citizen.
+Future<SocialCredential?> simulatedSocialPrompt(SocialProvider provider) async {
+  final context = rootNavigatorKey.currentContext;
+  if (context == null) return null;
+  final name = switch (provider) {
+    SocialProvider.apple => AuthStrings.apple,
+    SocialProvider.google => AuthStrings.google,
+  };
+  const email = MockAccounts.demoEmail;
+  final ok = await showAppSheet<bool>(
+    context,
+    builder: (context) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Icon(
+          provider == SocialProvider.apple ? Icons.apple : Icons.account_circle_outlined,
+          size: AppSizes.iconLg * 2,
+          color: context.colors.ink,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(DevStrings.socialTitle(name), textAlign: TextAlign.center, style: context.text.headline),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          DevStrings.socialBody(name, email),
+          textAlign: TextAlign.center,
+          style: context.text.body,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppButton(label: DevStrings.socialContinue, onPressed: () => Navigator.pop(context, true)),
+        const SizedBox(height: AppSpacing.xs),
+        AppButton(
+          label: CommonStrings.cancel,
+          variant: AppButtonVariant.secondary,
+          onPressed: () => Navigator.pop(context, false),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return null;
+  return SocialCredential(
+    provider: provider,
+    idToken: 'sim:${provider.name}:${DateTime.now().microsecondsSinceEpoch}',
+    email: email,
+  );
 }

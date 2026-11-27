@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- PNG icon set (`assets/icons`) used across the app: tab bar, home
+  shortcuts, lists, buttons. `AppIcons.x` works wherever an icon is
+  expected; `AppIcon` draws them.
+- Landing: presentation with the four main features, actions pinned at
+  the bottom.
+- Sign-in: no demo ids on screen; **any e-mail + `password`** signs in on
+  the simulator. "Continue with Apple / Google": `SocialSignIn` service
+  (device) + `AuthRepository.signInWithProvider` + `POST /auth/social`;
+  simulated consent sheet in demo mode, hidden with no provider plugged.
+- Signature: Profile > Ma signature to draw, save, redo or delete it
+  (`SignatureRepository`, `/me/signature`, strokes as JSON). Signing a
+  petition writes the saved signature on the petition sheet, pen moving
+  along the line, while the request runs; first time, the member draws
+  it first.
+- Tests: contract suites for social sign-in and signature (simulator +
+  REST), flows for the universal password, Apple/Google, signature and
+  petition signing.
+
 ## 0.2.0 — 2026-11-27
 
 - Interface in French (texts, simulated data, error messages, dates and

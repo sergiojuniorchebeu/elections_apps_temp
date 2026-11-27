@@ -16,6 +16,7 @@ import '../../features/identity/presentation/personal_details_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/petitions/presentation/petitions_screens.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/presentation/signature_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/services/presentation/services_screens.dart';
 import '../../shared/screens/not_found_screen.dart';
@@ -137,6 +138,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       page(Routes.documents, const DocumentsScreen()),
       detail(Routes.documents, (id) => DocumentScreen(id: id)),
       page(Routes.services, const ServicesScreen()),
+      GoRoute(
+        path: Routes.signature,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (_, state) => SignatureScreen(
+          returnOnSave: state.uri.queryParameters[Routes.returnParam] == '1',
+        ),
+      ),
       detail(Routes.services, (id) => ServiceScreen(id: id)),
     ],
   );

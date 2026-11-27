@@ -16,12 +16,12 @@ class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   static IconData iconOf(NotificationKind k) => switch (k) {
-    NotificationKind.election => Icons.how_to_vote_outlined,
-    NotificationKind.petition => Icons.article_outlined,
-    NotificationKind.identity => Icons.badge_outlined,
+    NotificationKind.election => AppIcons.elections,
+    NotificationKind.petition => AppIcons.petitions,
+    NotificationKind.identity => AppIcons.identity,
     NotificationKind.security => Icons.shield_outlined,
     NotificationKind.service => Icons.account_balance_outlined,
-    NotificationKind.unknown => Icons.notifications_none_rounded,
+    NotificationKind.unknown => AppIcons.notifications,
   };
 
   /// Where tapping a notification leads, if anywhere.

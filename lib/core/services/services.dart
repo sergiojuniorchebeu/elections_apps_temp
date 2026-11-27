@@ -6,6 +6,7 @@ import 'device_auth.dart';
 import 'problem_report.dart';
 import 'push.dart';
 import 'qr_scanner.dart';
+import 'social_sign_in.dart';
 
 export 'analytics.dart';
 export 'crash_reporter.dart';
@@ -13,6 +14,7 @@ export 'device_auth.dart';
 export 'problem_report.dart';
 export 'push.dart';
 export 'qr_scanner.dart';
+export 'social_sign_in.dart';
 
 /// External services, all behind interfaces with an empty default.
 /// `bootstrap.dart` overrides them; tests pass fakes to `pumpApp`.
@@ -28,6 +30,9 @@ final deviceAuthenticatorProvider = Provider<DeviceAuthenticator>(
 );
 final problemReporterProvider = Provider<ProblemReporter>(
   (_) => const EmailProblemReporter('support@example.org'),
+);
+final socialSignInProvider = Provider<SocialSignIn>(
+  (_) => const NoSocialSignIn(),
 );
 final qrScannerProvider = Provider<QrScanner>((_) => const NoQrScanner());
 final appShortcutsProvider = Provider<AppShortcuts>(

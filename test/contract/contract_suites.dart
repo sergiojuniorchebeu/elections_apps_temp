@@ -1,6 +1,8 @@
 import 'package:elections_app/core/error/failure.dart';
+import 'package:elections_app/core/services/social_sign_in.dart';
 import 'package:elections_app/core/session/session.dart';
 import 'package:elections_app/features/auth/domain/auth_repository.dart';
+import 'package:elections_app/features/profile/domain/signature.dart';
 import 'package:elections_app/mock/mock_accounts.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -140,6 +142,71 @@ void runContractSuites(ContractEnv Function() create) {
       expect(await env.notifications.unreadCount(), greaterThan(0));
       await env.notifications.markAllRead();
       expect(await env.notifications.unreadCount(), 0);
+    });
+  });
+
+  group('[${probe.name}] social sign-in', () {
+    test('a valid provider token opens a session', () async {
+      final env = create();
+      final r = await env.auth.signInWithProvider(env.validSocialCredential);
+      expect(r.session.accessToken, isNotEmpty);
+      expect(r.user.email, isNotEmpty);
+    });
+
+    test('a forged token -> AuthFailure(invalidCredentials)', () async {
+      final env = create();
+      await expectLater(
+        env.auth.signInWithProvider(
+          const SocialCredential(provider: SocialProvider.apple, idToken: 'forged'),
+        ),
+        throwsA(isA<AuthFailure>().having(
+          (f) => f.reason,
+          'reason',
+          AuthFailureReason.invalidCredentials,
+        )),
+      );
+    });
+  });
+
+  group('[${probe.name}] signature', () {
+    Signature zigzag() => Signature(
+      strokes: [
+        [for (var i = 0; i <= 20; i++) SignaturePoint(0.1 + i * 0.035, i.isEven ? 0.4 : 0.7)],
+      ],
+    );
+
+    test('none at first, saved, read back, deleted', () async {
+      final env = create();
+      await env.signIn();
+      expect(await env.signatures.get(), isNull);
+
+      final saved = await env.signatures.save(zigzag());
+      expect(saved.pointCount, zigzag().pointCount);
+
+      final read = await env.signatures.get();
+      expect(read, isNotNull);
+      expect(read!.strokes.single.first.x, closeTo(0.1, 0.001));
+
+      await env.signatures.delete();
+      expect(await env.signatures.get(), isNull);
+    });
+
+    test('a dot is refused on the signature field', () async {
+      final env = create();
+      await env.signIn();
+      await expectLater(
+        env.signatures.save(const Signature(strokes: [[SignaturePoint(0.5, 0.5)]])),
+        throwsA(isA<ValidationFailure>().having(
+          (f) => f.fieldErrors.keys,
+          'fields',
+          contains(SignatureRules.field),
+        )),
+      );
+    });
+
+    test('not signed in -> AuthFailure', () async {
+      final env = create();
+      await expectLater(env.signatures.get(), throwsA(isA<AuthFailure>()));
     });
   });
 }

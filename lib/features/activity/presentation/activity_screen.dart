@@ -21,8 +21,8 @@ class ActivityScreen extends ConsumerWidget {
   };
 
   static IconData iconOf(ActivityKind k) => switch (k) {
-    ActivityKind.identity => Icons.badge_outlined,
-    ActivityKind.civic => Icons.how_to_vote_outlined,
+    ActivityKind.identity => AppIcons.identity,
+    ActivityKind.civic => AppIcons.elections,
     ActivityKind.security => Icons.shield_outlined,
     ActivityKind.service => Icons.account_balance_outlined,
     ActivityKind.unknown => Icons.circle_outlined,

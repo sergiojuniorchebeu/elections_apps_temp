@@ -36,6 +36,13 @@ void main() {
           devPanel: false,
           size: const Size(430, 932),
         );
+        // PNG icons decode outside the fake clock: load them for real.
+        await tester.runAsync(() async {
+          for (final e in find.byType(Image).evaluate()) {
+            await precacheImage((e.widget as Image).image, e);
+          }
+        });
+        await tester.pumpAndSettle();
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile('goldens/${name}_${mode.name}.png'),

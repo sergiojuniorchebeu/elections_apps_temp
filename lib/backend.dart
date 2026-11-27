@@ -15,7 +15,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 
 import 'core/config/app_config.dart';
-import 'core/config/demo_info.dart';
 import 'core/core_providers.dart';
 import 'core/network/api_client.dart';
 import 'core/network/reachability.dart';
@@ -44,6 +43,9 @@ import 'features/notifications/data/rest/rest_notifications_repository.dart';
 import 'features/petitions/application/petitions_providers.dart';
 import 'features/petitions/data/mock/mock_petitions_repository.dart';
 import 'features/petitions/data/rest/rest_petitions_repository.dart';
+import 'features/profile/application/signature_providers.dart';
+import 'features/profile/data/mock/mock_signature_repository.dart';
+import 'features/profile/data/rest/rest_signature_repository.dart';
 import 'features/search/application/search_providers.dart';
 import 'features/search/data/mock/mock_search_repository.dart';
 import 'features/search/data/rest/rest_search_repository.dart';
@@ -52,7 +54,6 @@ import 'features/services/application/services_providers.dart';
 import 'features/services/data/mock/mock_services_repository.dart';
 import 'features/services/data/rest/rest_services_repository.dart';
 import 'l10n/strings.dart';
-import 'mock/mock_accounts.dart';
 import 'mock/mock_providers.dart';
 
 List<Override> backendOverrides(AppConfig config) => switch (config.backend) {
@@ -83,17 +84,6 @@ final _mockDocuments = Provider(
 );
 
 List<Override> mockOverrides() => [
-  demoInfoProvider.overrideWithValue(
-    const DemoInfo(
-      accounts: [MockAccounts.demoEmail, MockAccounts.secondEmail],
-      password: MockAccounts.demoPassword,
-      hints: [
-        'Tout autre mot de passe → refusé',
-        '${MockAccounts.lockedEmail} → trop de tentatives',
-        'Inscription avec ${MockAccounts.takenEmail} → e-mail déjà utilisé',
-      ],
-    ),
-  ),
   reachabilityProvider.overrideWith(
     (ref) => MockReachability(ref.watch(mockServerProvider)),
   ),
@@ -137,6 +127,9 @@ List<Override> mockOverrides() => [
   ),
   electionsRepositoryProvider.overrideWith((ref) => ref.watch(_mockElections)),
   petitionsRepositoryProvider.overrideWith((ref) => ref.watch(_mockPetitions)),
+  signatureRepositoryProvider.overrideWith(
+    (ref) => MockSignatureRepository(ref.watch(mockServerProvider)),
+  ),
   documentsRepositoryProvider.overrideWith((ref) => ref.watch(_mockDocuments)),
   servicesRepositoryProvider.overrideWith((ref) => ref.watch(_mockServices)),
   searchRepositoryProvider.overrideWith((ref) {
@@ -243,6 +236,9 @@ List<Override> restOverrides(AppConfig config) => [
   ),
   documentsRepositoryProvider.overrideWith(
     (ref) => RestDocumentsRepository(ref.watch(apiClientProvider)),
+  ),
+  signatureRepositoryProvider.overrideWith(
+    (ref) => RestSignatureRepository(ref.watch(apiClientProvider)),
   ),
   servicesRepositoryProvider.overrideWith(
     (ref) => RestServicesRepository(ref.watch(apiClientProvider)),

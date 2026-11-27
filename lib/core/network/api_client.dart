@@ -93,6 +93,16 @@ final class ApiClient {
     decode,
   );
 
+  /// Replaces a whole resource (idempotent by nature).
+  Future<T> put<T>(
+    String path, {
+    required Decode<T> decode,
+    Object? body,
+  }) => _send(
+    () => dio.put<Object?>(path, data: body, options: _options()),
+    decode,
+  );
+
   Future<T> delete<T>(String path, {required Decode<T> decode}) =>
       _send(() => dio.delete<Object?>(path, options: _options()), decode);
 

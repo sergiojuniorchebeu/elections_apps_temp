@@ -1,3 +1,4 @@
+import '../../../core/services/social_sign_in.dart';
 import '../../../core/session/session.dart';
 import 'user.dart';
 
@@ -45,6 +46,11 @@ abstract interface class AuthRepository {
   Future<AuthResult> signIn({required String email, required String password});
 
   Future<AuthResult> signUp(SignUpRequest request);
+
+  /// Signs in (or creates the account) from a provider's proof of
+  /// identity. An invalid or expired token =
+  /// `AuthFailure(reason: invalidCredentials)`.
+  Future<AuthResult> signInWithProvider(SocialCredential credential);
 
   /// Always succeeds for a well-formed email (never tells whether an
   /// account exists).

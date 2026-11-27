@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 import '../tokens/app_dimens.dart';
+import '../tokens/app_icons.dart';
 
 enum AppButtonVariant { primary, secondary, ghost, danger }
 
@@ -46,7 +47,7 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: AppSizes.iconSm, color: fg),
+                AppIcon(icon, size: AppSizes.iconSm, color: fg),
                 const SizedBox(width: AppSpacing.xs),
               ],
               Flexible(
@@ -160,7 +161,7 @@ class CircleIconButton extends StatelessWidget {
                     onTap: onPressed,
                     child: SizedBox.square(
                       dimension: size,
-                      child: Icon(
+                      child: AppIcon(
                         icon,
                         size: AppSizes.icon,
                         color: foreground ?? c.ink,

@@ -32,6 +32,7 @@ List<Override> appOverrides({
   required SecureStore secureStore,
   required FreshnessObserver freshness,
   DeviceAuthenticator? authenticator,
+  SocialSignIn? socialSignIn,
 }) => [
   appConfigProvider.overrideWithValue(config),
   preferencesProvider.overrideWithValue(preferences),
@@ -51,6 +52,13 @@ List<Override> appOverrides({
             : LockStrings.fingerprint,
         decide: simulatedBiometricPrompt,
       ),
+    ),
+  if (socialSignIn != null)
+    socialSignInProvider.overrideWithValue(socialSignIn)
+  // Demo mode: "Continue with Apple / Google" shows a consent sheet.
+  else if (config.isDemo)
+    socialSignInProvider.overrideWithValue(
+      const SimulatedSocialSignIn(decide: simulatedSocialPrompt),
     ),
 ];
 

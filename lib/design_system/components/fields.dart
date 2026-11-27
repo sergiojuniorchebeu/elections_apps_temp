@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../l10n/strings.dart';
 import '../theme/app_theme.dart';
 import '../tokens/app_dimens.dart';
+import '../tokens/app_icons.dart';
 
 /// The only text field: label above, error below (from the server or the
 /// form), optional show/hide for passwords.
@@ -101,7 +102,7 @@ class _AppTextFieldState extends State<AppTextField> {
             suffixIcon: widget.obscure
                 ? IconButton(
                     tooltip: _hidden ? CommonStrings.showPassword : CommonStrings.hidePassword,
-                    icon: Icon(
+                    icon: AppIcon(
                       _hidden
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
@@ -112,7 +113,7 @@ class _AppTextFieldState extends State<AppTextField> {
                   )
                 : widget.suffixIcon == null
                 ? null
-                : Icon(widget.suffixIcon, size: AppSizes.icon, color: c.inkSecondary),
+                : AppIcon(widget.suffixIcon, size: AppSizes.icon, color: c.inkSecondary),
           ),
         ),
         if (widget.error != null) ...[
@@ -122,7 +123,7 @@ class _AppTextFieldState extends State<AppTextField> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.error_outline, size: AppSizes.iconSm, color: c.danger),
+                AppIcon(Icons.error_outline, size: AppSizes.iconSm, color: c.danger),
                 const SizedBox(width: AppSpacing.xxs),
                 Expanded(
                   child: Text(

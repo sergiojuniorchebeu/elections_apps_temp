@@ -102,7 +102,7 @@ class _IdContent extends ConsumerWidget {
                             ),
                           ),
                           CircleIconButton(
-                            icon: Icons.search_rounded,
+                            icon: AppIcons.search,
                             semanticLabel: CommonStrings.search,
                             onPressed: () => context.push(Routes.search),
                           ),
@@ -319,7 +319,7 @@ class _BandButton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xs),
-                  Icon(icon, size: AppSizes.iconSm, color: c.onBand),
+                  AppIcon(icon, size: AppSizes.iconSm, color: c.onBand),
                 ],
               ),
             ),

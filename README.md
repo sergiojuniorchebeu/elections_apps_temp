@@ -20,22 +20,25 @@ flutter pub get
 flutter run
 ```
 
-No account, key or service needed. Sign in with a demo account shown on
-the sign-in screen.
+No account, key or service needed. Sign in with **any e-mail** and the
+universal password `password`, or with Apple / Google (simulated).
 
 ### Demo accounts and magic values
 
 | Where | Value | Result |
 | --- | --- | --- |
+| Sign-in | **any e-mail** / `password` | signed in (unknown e-mails get a verified citizen) |
 | Sign-in | `alex.morgan@example.org` / `demo1234` | verified citizen |
 | Sign-in | `sam.lee@example.org` / `demo1234` | identity pending |
 | Sign-in | any other password | "E-mail ou mot de passe incorrect" |
+| Sign-in | Continue with Apple / Google | consent sheet, then signed in as Alex Morgan |
 | Sign-in | `locked@example.org` | "Too many attempts" (rate limit) |
 | Sign-up | `taken@example.org` | "This email is already used" on the field |
 | Check an ID | code `000000` | "This code is not valid" |
 | Personal details | phone `+000000` | refused by the server, under the field |
 | Service request | note containing `reject` | refused, under the field |
-| Petition | *Keep the old market hall* | closed: signing is refused |
+| Petition | *Sauver l’ancienne halle du marché* | closed: signing is refused |
+| Petition | first signature | asks to draw your signature (saved in Profile > Ma signature), then the pen writes it on the petition |
 | Election | *Old Town by-election* | over: reminder refused |
 
 ### Scenario panel

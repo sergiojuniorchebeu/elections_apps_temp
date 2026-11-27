@@ -15,7 +15,7 @@ class NotificationBell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final unread = ref.watch(unreadCountProvider).value ?? 0;
     return CircleIconButton(
-      icon: Icons.notifications_none_rounded,
+      icon: AppIcons.notifications,
       semanticLabel: CommonStrings.notifications,
       badge: unread > 0,
       onPressed: () => context.push(Routes.notifications),

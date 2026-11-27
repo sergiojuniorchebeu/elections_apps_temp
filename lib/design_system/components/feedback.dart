@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../l10n/strings.dart';
 import '../theme/app_theme.dart';
 import '../tokens/app_dimens.dart';
+import '../tokens/app_icons.dart';
 import 'buttons.dart';
 
 /// Placeholder block while loading. Pulses unless "reduce motion" is on;
@@ -139,7 +140,7 @@ class StateView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-              child: Icon(icon, size: AppSizes.iconLg, color: fg),
+              child: AppIcon(icon, size: AppSizes.iconLg, color: fg),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -206,7 +207,7 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: AppSizes.iconSm - 4, color: fg),
+            AppIcon(icon, size: AppSizes.iconSm - 4, color: fg),
             const SizedBox(width: AppSpacing.xxs),
           ],
           Flexible(
@@ -276,7 +277,7 @@ class InlineNotice extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: AppSizes.iconSm, color: fg),
+            AppIcon(icon, size: AppSizes.iconSm, color: fg),
             const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Text(message, style: context.text.small.copyWith(color: c.ink)),

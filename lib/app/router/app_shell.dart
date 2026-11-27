@@ -12,10 +12,10 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell shell;
 
   static const items = [
-    NavItem(Icons.home_outlined, NavStrings.home),
-    NavItem(Icons.badge_outlined, NavStrings.digitalId),
-    NavItem(Icons.monitor_heart_outlined, NavStrings.activity),
-    NavItem(Icons.person_outline_rounded, NavStrings.profile),
+    NavItem(AppIcons.home, NavStrings.home),
+    NavItem(AppIcons.identity, NavStrings.digitalId),
+    NavItem(AppIcons.activity, NavStrings.activity),
+    NavItem(AppIcons.profile, NavStrings.profile),
   ];
 
   @override

@@ -22,6 +22,12 @@ abstract final class Routes {
   static const documents = '/documents';
   static const services = '/services';
 
+  /// Profile > My signature. [signatureThenBack] closes it once saved and
+  /// hands the signature back (signing a petition).
+  static const signature = '/signature';
+  static const returnParam = 'return';
+  static const signatureThenBack = '$signature?$returnParam=1';
+
   static String election(String id) => '$elections/${Uri.encodeComponent(id)}';
   static String petition(String id) => '$petitions/${Uri.encodeComponent(id)}';
   static String document(String id) => '$documents/${Uri.encodeComponent(id)}';

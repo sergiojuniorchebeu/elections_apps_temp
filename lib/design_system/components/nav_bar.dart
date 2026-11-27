@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_theme.dart';
 import '../tokens/app_dimens.dart';
+import '../tokens/app_icons.dart';
 
 final class NavItem {
   const NavItem(this.icon, this.label);
@@ -115,7 +116,7 @@ class _NavButton extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(item.icon, size: AppSizes.icon, color: fg),
+                  AppIcon(item.icon, size: AppSizes.icon, color: fg),
                   const SizedBox(height: AppSpacing.xxs / 2),
                   MediaQuery(
                     data: MediaQuery.of(context).copyWith(textScaler: scaler),

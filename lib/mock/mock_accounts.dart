@@ -1,13 +1,17 @@
-/// Demo accounts, shown on the sign-in screen in demo mode.
+/// Demo accounts (README "Demo mode").
 ///
-/// Magic values (documented in README "Demo mode"):
-/// * any password other than [demoPassword] -> wrong credentials;
+/// Magic values:
+/// * any e-mail + [universalPassword] -> signed in (unknown e-mails get a
+///   verified account on the fly);
+/// * a demo account also accepts [demoPassword];
+/// * any other password -> wrong credentials;
 /// * [lockedEmail] -> "Too many attempts" (rate limit);
 /// * sign-up with [takenEmail] -> "already used" on the email field.
 abstract final class MockAccounts {
   static const demoEmail = 'alex.morgan@example.org';
   static const secondEmail = 'sam.lee@example.org';
   static const demoPassword = 'demo1234';
+  static const universalPassword = 'password';
   static const lockedEmail = 'locked@example.org';
   static const takenEmail = 'taken@example.org';
 }

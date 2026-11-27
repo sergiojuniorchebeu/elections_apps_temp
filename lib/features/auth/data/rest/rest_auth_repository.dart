@@ -1,5 +1,6 @@
 import '../../../../core/error/failure.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/social_sign_in.dart';
 import '../../../../core/session/session.dart';
 import '../../domain/auth_repository.dart';
 import '../../domain/user.dart';
@@ -44,6 +45,21 @@ final class RestAuthRepository implements AuthRepository {
         body: {'email': email, 'password': password, 'device_id': deviceId()},
         decode: result,
       );
+
+  @override
+  Future<AuthResult> signInWithProvider(SocialCredential c) => _api.post(
+    '/auth/social',
+    auth: false,
+    body: {
+      'provider': c.provider.name,
+      'id_token': c.idToken,
+      'email': ?c.email,
+      'first_name': ?c.firstName,
+      'last_name': ?c.lastName,
+      'device_id': deviceId(),
+    },
+    decode: result,
+  );
 
   @override
   Future<AuthResult> signUp(SignUpRequest r) => _api.post(

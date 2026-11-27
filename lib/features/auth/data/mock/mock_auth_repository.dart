@@ -1,4 +1,5 @@
 import '../../../../core/error/failure.dart';
+import '../../../../core/services/social_sign_in.dart';
 import '../../../../core/session/session.dart';
 import '../../../../mock/mock_accounts.dart';
 import '../../../../mock/mock_server.dart';
@@ -33,17 +34,62 @@ final class MockAuthRepository implements AuthRepository {
     if (normalized == MockAccounts.lockedEmail) {
       throw const RateLimitFailure(retryAfter: Duration(seconds: 60));
     }
-    final account = _server.accounts.values
-        .where((a) => a.email == normalized)
-        .firstOrNull;
-    if (account == null || account.password != password) {
+    final known = _accountFor(normalized);
+    final universal = password == MockAccounts.universalPassword;
+    if (known == null && !universal ||
+        known != null && !universal && known.password != password) {
       throw const AuthFailure(reason: AuthFailureReason.invalidCredentials);
     }
+    final account = known ?? _create(normalized);
     return AuthResult(
       session: _server.issueSession(account.id),
       user: toUser(account),
     );
   });
+
+  @override
+  Future<AuthResult> signInWithProvider(SocialCredential credential) =>
+      _server.call(authenticated: false, write: true, (_) {
+        // The simulated provider signs its tokens "sim:<provider>:...".
+        if (!credential.idToken.startsWith('sim:${credential.provider.name}:')) {
+          throw const AuthFailure(reason: AuthFailureReason.invalidCredentials);
+        }
+        final email = (credential.email ?? MockAccounts.demoEmail).trim().toLowerCase();
+        final account =
+            _accountFor(email) ??
+            _create(email, firstName: credential.firstName, lastName: credential.lastName);
+        return AuthResult(
+          session: _server.issueSession(account.id),
+          user: toUser(account),
+        );
+      });
+
+  MockAccount? _accountFor(String email) =>
+      _server.accounts.values.where((a) => a.email == email).firstOrNull;
+
+  /// Demo: an unknown e-mail signed in with the universal password (or a
+  /// provider) gets a verified citizen, named after the e-mail.
+  MockAccount _create(String email, {String? firstName, String? lastName}) {
+    final parts = email
+        .split('@')
+        .first
+        .split(RegExp(r'[._-]+'))
+        .where((p) => p.isNotEmpty)
+        .map((p) => '${p[0].toUpperCase()}${p.substring(1)}')
+        .toList();
+    final id = _server.newId('u');
+    final account = MockAccount(
+      id: id,
+      email: email,
+      password: MockAccounts.universalPassword,
+      firstName: firstName ?? (parts.isEmpty ? 'Citoyen' : parts.first),
+      lastName: lastName ?? (parts.length > 1 ? parts.sublist(1).join(' ') : 'Démo'),
+      dateOfBirth: DateTime(1990, 1, 1),
+      citizenNumber: '6${_server.seed.nextInt(10000000, 99999999)}${_server.seed.nextInt(100, 999)}',
+    );
+    _server.accounts[id] = account;
+    return account;
+  }
 
   @override
   Future<AuthResult> signUp(SignUpRequest request) =>

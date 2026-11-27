@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/router/routes.dart';
-import '../../../core/state/action_controller.dart';
 import '../../../core/state/connectivity.dart';
 import '../../../core/utils/formats.dart';
 import '../../../design_system/design_system.dart';
@@ -15,6 +14,7 @@ import '../../../shared/widgets/page_scaffold.dart';
 import '../../../shared/widgets/paged_list.dart';
 import '../application/petitions_providers.dart';
 import '../domain/petition.dart';
+import 'petition_sign_sheet.dart';
 
 String _count(Petition p) => HomeStrings.signatures(
   Formats.number(p.signatures),
@@ -35,7 +35,7 @@ class PetitionsScreen extends ConsumerWidget {
         onRefresh: notifier.refresh,
         onLoadMore: notifier.loadMore,
         empty: const StateView(
-          icon: Icons.article_outlined,
+          icon: AppIcons.petitions,
           title: CivicStrings.petitionsEmpty,
           message: CivicStrings.petitionsEmptyBody,
         ),
@@ -120,15 +120,6 @@ class PetitionScreen extends ConsumerWidget {
     final petition = ref.watch(petitionProvider(id));
     final action = ref.watch(signControllerProvider(id));
     final online = ref.watch(connectivityProvider).online;
-    ref.listen(signControllerProvider(id), (_, next) {
-      switch (next) {
-        case ActionFailed(:final failure):
-          showFailureSnack(context, failure);
-        case ActionSucceeded():
-          showInfoSnack(context, CivicStrings.signedSnack);
-        default:
-      }
-    });
     final p = petition.value;
     return PageScaffold(
       title: CivicStrings.petitions,
@@ -149,19 +140,9 @@ class PetitionScreen extends ConsumerWidget {
             )
           : AppButton(
               label: CivicStrings.sign,
-              icon: Icons.draw_outlined,
+              icon: AppIcons.pen,
               loading: action.isRunning,
-              onPressed: !online
-                  ? null
-                  : () async {
-                      final ok = await confirmDialog(
-                        context,
-                        title: CivicStrings.confirmSignTitle,
-                        message: CivicStrings.confirmSignBody,
-                        confirmLabel: CivicStrings.sign,
-                      );
-                      if (ok) await ref.read(signControllerProvider(id).notifier).sign();
-                    },
+              onPressed: !online ? null : () => startPetitionSigning(context, ref, p),
             ),
       body: AsyncView(
         value: petition,

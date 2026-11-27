@@ -28,11 +28,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   static IconData _icon(SearchKind k) => switch (k) {
-    SearchKind.election => Icons.how_to_vote_outlined,
-    SearchKind.petition => Icons.article_outlined,
-    SearchKind.document => Icons.description_outlined,
+    SearchKind.election => AppIcons.elections,
+    SearchKind.petition => AppIcons.petitions,
+    SearchKind.document => AppIcons.documents,
     SearchKind.service => Icons.account_balance_outlined,
-    SearchKind.unknown => Icons.search_rounded,
+    SearchKind.unknown => AppIcons.search,
   };
 
   static String? _route(SearchResult r) {
@@ -66,7 +66,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               hint: SearchStrings.hint,
               controller: _query,
               textInputAction: TextInputAction.search,
-              suffixIcon: Icons.search_rounded,
+              suffixIcon: AppIcons.search,
               onChanged: ref.read(searchQueryProvider.notifier).set,
             ),
           ),
@@ -74,7 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: q.isEmpty
                 ? const SingleChildScrollView(
                     child: StateView(
-                      icon: Icons.search_rounded,
+                      icon: AppIcons.search,
                       title: SearchStrings.startTitle,
                       message: SearchStrings.startBody,
                     ),

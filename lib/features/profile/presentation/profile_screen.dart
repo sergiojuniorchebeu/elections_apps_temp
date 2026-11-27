@@ -15,6 +15,7 @@ import '../../../l10n/strings.dart';
 import '../../../shared/widgets/failure_view.dart';
 import '../../auth/auth.dart';
 import '../../identity/identity.dart';
+import '../application/signature_providers.dart';
 
 /// Profile tab: account, preferences, security, support, sign-out.
 class ProfileScreen extends ConsumerWidget {
@@ -105,19 +106,30 @@ class ProfileScreen extends ConsumerWidget {
                   title: ProfileStrings.account,
                   children: [
                     AppListTile(
-                      icon: Icons.person_outline_rounded,
+                      icon: AppIcons.profile,
                       title: ProfileStrings.personalDetails,
                       trailing: const _Chevron(),
                       onTap: () => context.push(Routes.personalDetails),
                     ),
                     AppListTile(
-                      icon: Icons.description_outlined,
+                      icon: AppIcons.pen,
+                      title: SignatureStrings.tile,
+                      subtitle: switch (ref.watch(signatureProvider)) {
+                        AsyncData(value: _?) => SignatureStrings.savedOn,
+                        AsyncData() => SignatureStrings.none,
+                        _ => null,
+                      },
+                      trailing: const _Chevron(),
+                      onTap: () => context.push(Routes.signature),
+                    ),
+                    AppListTile(
+                      icon: AppIcons.documents,
                       title: ProfileStrings.documents,
                       trailing: const _Chevron(),
                       onTap: () => context.push(Routes.documents),
                     ),
                     _SwitchTile(
-                      icon: Icons.notifications_none_rounded,
+                      icon: AppIcons.notifications,
                       title: ProfileStrings.pushNotifications,
                       subtitle: ProfileStrings.pushNotificationsSub,
                       value: ref.watch(pushEnabledProvider),

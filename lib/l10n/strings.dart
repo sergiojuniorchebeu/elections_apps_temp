@@ -54,7 +54,15 @@ abstract final class NavStrings {
 abstract final class AuthStrings {
   static const landingTitle = 'Votre quotidien\nVotre pays';
   static const landingBody =
-      'Votre identité numérique, les élections, les pétitions et les services publics, au même endroit, en sécurité.';
+      'Toute votre vie de citoyen au même endroit, en sécurité.';
+  static const featureId = 'Identité numérique';
+  static const featureIdSub = 'Votre carte, toujours sur vous';
+  static const featureElections = 'Élections';
+  static const featureElectionsSub = 'Dates, bureaux de vote et rappels';
+  static const featurePetitions = 'Pétitions';
+  static const featurePetitionsSub = 'Signez en un geste';
+  static const featureServices = 'Services et documents';
+  static const featureServicesSub = 'Vos démarches sans file d’attente';
   static const createAccount = 'Créer un compte';
   static const haveAccount = 'J’ai déjà un compte';
   static const signInTitle = 'Bon retour';
@@ -67,7 +75,11 @@ abstract final class AuthStrings {
   static const noAccount = 'Pas encore de compte ?';
   static const signUpLink = 'En créer un';
   static const demoTitle = 'Mode démo';
-  static const demoBody = 'Utilisez un compte de démo (touchez pour remplir) :';
+  static const orDivider = 'ou';
+  static const continueWithApple = 'Continuer avec Apple';
+  static const continueWithGoogle = 'Continuer avec Google';
+  static const apple = 'Apple';
+  static const google = 'Google';
   static const signUpTitle = 'Créez votre compte';
   static const signUpBody =
       'Cela prend une minute. Votre identité est vérifiée ensuite.';
@@ -346,4 +358,45 @@ abstract final class DevStrings {
   static const biometricTitle = 'Biométrie simulée';
   static const approve = 'Accepter';
   static const fail = 'Échouer';
+  static String socialTitle(String provider) => 'Connexion avec $provider (simulée)';
+  static String socialBody(String provider, String email) =>
+      '$provider partagera votre nom et votre e-mail ($email) avec l’app.';
+  static const socialContinue = 'Continuer';
+}
+
+abstract final class SignatureStrings {
+  static const title = 'Ma signature';
+  static const body =
+      'Signez avec le doigt dans le cadre. Elle sera utilisée pour signer les pétitions.';
+  static const padLabel = 'Zone de signature';
+  static const padHint = 'Signez ici';
+  static const clear = 'Effacer';
+  static const undo = 'Annuler le dernier trait';
+  static const save = 'Enregistrer ma signature';
+  static const redo = 'Refaire ma signature';
+  static const delete = 'Supprimer ma signature';
+  static const deleteConfirmTitle = 'Supprimer votre signature ?';
+  static const deleteConfirmBody =
+      'Les pétitions déjà signées ne changent pas. Il faudra en créer une nouvelle pour signer.';
+  static const saved = 'Signature enregistrée.';
+  static const deleted = 'Signature supprimée.';
+  static const savedOn = 'Enregistrée';
+  static const none = 'Pas encore créée';
+  static const tile = 'Ma signature';
+}
+
+abstract final class PetitionSignStrings {
+  static const title = 'Signer la pétition';
+  static const needSignature = 'Créez d’abord votre signature';
+  static const needSignatureBody =
+      'Elle est enregistrée dans votre profil et sert pour toutes vos pétitions.';
+  static const createSignature = 'Créer ma signature';
+  static const signHere = 'Signature du citoyen';
+  static const warning = 'Une signature ne peut pas être retirée.';
+  static const sign = 'Signer';
+  static const signing = 'Signature en cours…';
+  static const done = 'Pétition signée';
+  static const doneBody = 'Merci, votre signature a été ajoutée.';
+  static const close = 'Fermer';
+  static String by(String name) => 'Signé par $name';
 }

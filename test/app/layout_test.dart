@@ -25,6 +25,7 @@ void main() {
     Routes.services,
     '/services/sv_marriage',
     Routes.search,
+    Routes.signature,
   ];
   const signedOutRoutes = [
     Routes.welcome,

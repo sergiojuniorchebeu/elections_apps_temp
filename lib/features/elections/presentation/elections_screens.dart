@@ -32,7 +32,7 @@ class ElectionsScreen extends ConsumerWidget {
             ? CivicStrings.past
             : CivicStrings.upcoming,
         empty: const StateView(
-          icon: Icons.how_to_vote_outlined,
+          icon: AppIcons.elections,
           title: CivicStrings.electionsEmpty,
           message: CivicStrings.electionsEmptyBody,
         ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core_providers.dart';
 import '../../../core/error/failure.dart';
 import '../../../core/security/app_lock.dart';
+import '../../../core/services/services.dart';
 import '../../../core/state/action_controller.dart';
 import '../../../core/state/session_scope.dart';
 import '../../../core/storage/preferences.dart';
@@ -91,6 +92,37 @@ class SignInController extends ActionController<AuthResult> {
       (_) => ref
           .read(authRepositoryProvider)
           .signIn(email: email.trim(), password: password),
+    );
+    if (result == null) return false;
+    await ref.read(sessionControllerProvider.notifier).establish(result);
+    return true;
+  }
+}
+
+/// "Continue with Apple / Google": one controller per provider, so each
+/// button shows its own progress.
+final socialSignInControllerProvider = NotifierProvider.autoDispose
+    .family<SocialSignInController, ActionState<AuthResult>, SocialProvider>(
+      SocialSignInController.new,
+    );
+
+class SocialSignInController extends ActionController<AuthResult> {
+  SocialSignInController(this.provider);
+  final SocialProvider provider;
+
+  /// False when cancelled or refused (the state tells why).
+  Future<bool> submit() async {
+    if (state.isRunning) return false;
+    final SocialCredential? credential;
+    try {
+      credential = await ref.read(socialSignInProvider).obtain(provider);
+    } on Object catch (e) {
+      if (ref.mounted) state = ActionFailed(Failure.from(e));
+      return false;
+    }
+    if (credential == null || !ref.mounted) return false; // cancelled
+    final result = await run(
+      (_) => ref.read(authRepositoryProvider).signInWithProvider(credential!),
     );
     if (result == null) return false;
     await ref.read(sessionControllerProvider.notifier).establish(result);

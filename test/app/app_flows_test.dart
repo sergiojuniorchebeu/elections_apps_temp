@@ -2,6 +2,7 @@ import 'package:elections_app/app/router/routes.dart';
 import 'package:elections_app/core/state/connectivity.dart';
 import 'package:elections_app/core/utils/formats.dart';
 import 'package:elections_app/features/auth/application/session_controller.dart';
+import 'package:elections_app/features/profile/presentation/signature_widgets.dart';
 import 'package:elections_app/l10n/strings.dart';
 import 'package:elections_app/mock/mock_accounts.dart';
 import 'package:elections_app/mock/scenario.dart';
@@ -25,6 +26,52 @@ void main() {
 
       expect(find.text('Alex Morgan'), findsWidgets);
       expect(find.text(HomeStrings.community), findsOneWidget);
+      await app.dispose();
+    });
+
+    testWidgets('sign-in shows no demo ids, offers Apple and Google', (tester) async {
+      final app = await pumpApp(tester, signedIn: false, location: Routes.signIn);
+      expect(find.text(MockAccounts.demoEmail), findsNothing);
+      expect(find.text(AuthStrings.continueWithApple), findsOneWidget);
+      expect(find.text(AuthStrings.continueWithGoogle), findsOneWidget);
+      await app.dispose();
+    });
+
+    testWidgets('any e-mail + the universal password signs in', (tester) async {
+      final app = await pumpApp(tester, signedIn: false, location: Routes.signIn);
+      await tester.enterText(find.byType(TextField).at(0), 'jean.dupont@exemple.fr');
+      await tester.enterText(find.byType(TextField).at(1), MockAccounts.universalPassword);
+      await tester.tap(find.text(AuthStrings.signIn));
+      await tester.pumpAndSettle();
+
+      expect(app.container.read(sessionControllerProvider).signedIn, isTrue);
+      expect(find.text(HomeStrings.community), findsOneWidget);
+      await app.dispose();
+    });
+
+    testWidgets('continue with Google: consent sheet, then home', (tester) async {
+      final app = await pumpApp(tester, signedIn: false, location: Routes.signIn);
+      await tester.ensureVisible(find.text(AuthStrings.continueWithGoogle));
+      await tester.tap(find.text(AuthStrings.continueWithGoogle));
+      await tester.pumpAndSettle();
+      expect(find.text(DevStrings.socialTitle(AuthStrings.google)), findsOneWidget);
+      await tester.tap(find.text(DevStrings.socialContinue));
+      await tester.pumpAndSettle();
+
+      expect(app.container.read(sessionControllerProvider).signedIn, isTrue);
+      expect(find.text(HomeStrings.community), findsOneWidget);
+      await app.dispose();
+    });
+
+    testWidgets('continue with Apple, then cancel: still signed out', (tester) async {
+      final app = await pumpApp(tester, signedIn: false, location: Routes.signIn);
+      await tester.ensureVisible(find.text(AuthStrings.continueWithApple));
+      await tester.tap(find.text(AuthStrings.continueWithApple));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(CommonStrings.cancel));
+      await tester.pumpAndSettle();
+      expect(app.container.read(sessionControllerProvider).signedIn, isFalse);
+      expect(find.text(AuthStrings.signIn), findsOneWidget);
       await app.dispose();
     });
 
@@ -146,13 +193,27 @@ void main() {
   });
 
   group('civic', () {
-    testWidgets('signing a petition counts once and shows everywhere', (tester) async {
+    testWidgets('signing a petition: create a signature, then the pen writes it', (tester) async {
       final app = await pumpApp(tester, location: Routes.petition('pt_crossings'));
       expect(find.text(HomeStrings.signatures(Formats.number(2310), Formats.number(5000))), findsOneWidget);
 
+      // No signature yet: create one first.
       await tester.tap(find.text(CivicStrings.sign));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(CivicStrings.sign).last); // confirm dialog
+      expect(find.text(PetitionSignStrings.needSignature), findsOneWidget);
+      await tester.tap(find.text(PetitionSignStrings.createSignature));
+      await tester.pumpAndSettle();
+      expect(find.byType(SignaturePad), findsOneWidget);
+      await drawSignature(tester);
+      await tester.tap(find.text(SignatureStrings.save));
+      await tester.pumpAndSettle();
+
+      // Back on the petition: the signing sheet with the saved signature.
+      expect(find.text(PetitionSignStrings.title), findsOneWidget);
+      await tester.tap(find.text(PetitionSignStrings.sign));
+      await tester.pumpAndSettle();
+      expect(find.text(PetitionSignStrings.done), findsOneWidget);
+      await tester.tap(find.text(PetitionSignStrings.close));
       await tester.pumpAndSettle();
 
       expect(find.text(HomeStrings.signatures(Formats.number(2311), Formats.number(5000))), findsOneWidget);
@@ -160,6 +221,42 @@ void main() {
 
       await app.go(Routes.activity);
       expect(find.text('Pétition signée'), findsWidgets);
+      await app.dispose();
+    });
+
+    testWidgets('a saved signature goes straight to the signing sheet', (tester) async {
+      final app = await pumpApp(tester, location: Routes.signature);
+      await drawSignature(tester);
+      await tester.tap(find.text(SignatureStrings.save));
+      await tester.pumpAndSettle();
+      expect(find.text(SignatureStrings.redo), findsOneWidget);
+
+      await app.go(Routes.petition('pt_crossings'));
+      await tester.pump(const Duration(seconds: 5)); // "saved" snack bar leaves
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(CivicStrings.sign));
+      await tester.pumpAndSettle();
+      expect(find.text(PetitionSignStrings.needSignature), findsNothing);
+      expect(find.text(PetitionSignStrings.title), findsOneWidget);
+      await app.dispose();
+    });
+
+    testWidgets('server error in the sheet: refused, can retry', (tester) async {
+      final app = await pumpApp(tester, location: Routes.signature);
+      await drawSignature(tester);
+      await tester.tap(find.text(SignatureStrings.save));
+      await tester.pumpAndSettle();
+      await app.go(Routes.petition('pt_crossings'));
+      await tester.pump(const Duration(seconds: 5)); // "saved" snack bar leaves
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(CivicStrings.sign));
+      await tester.pumpAndSettle();
+
+      app.scenario = MockScenario.serverError;
+      await tester.tap(find.text(PetitionSignStrings.sign));
+      await tester.pumpAndSettle();
+      expect(find.text(PetitionSignStrings.done), findsNothing);
+      expect(find.text(PetitionSignStrings.sign), findsOneWidget); // can retry
       await app.dispose();
     });
 
@@ -239,4 +336,18 @@ void main() {
     expect(screens.join(), isNot(contains('pt_green')));
     await app.dispose();
   });
+}
+
+/// Draws a zigzag in the signature pad, like a finger would.
+Future<void> drawSignature(WidgetTester tester) async {
+  final box = tester.getRect(find.byType(SignaturePad));
+  final g = await tester.startGesture(Offset(box.left + box.width * 0.15, box.top + box.width / 2.5 * 0.5));
+  for (var i = 1; i <= 24; i++) {
+    await g.moveTo(Offset(
+      box.left + box.width * (0.15 + i * 0.028),
+      box.top + box.width / 2.5 * (i.isEven ? 0.35 : 0.7),
+    ));
+  }
+  await g.up();
+  await tester.pump();
 }

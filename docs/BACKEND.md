@@ -16,7 +16,15 @@ declaring it in `lib/backend.dart`. No screen, no controller changes.
 | `DocumentsRepository` | `features/documents/domain/documents_repository.dart` |
 | `ServicesRepository` | `features/services/domain/services_repository.dart` |
 | `SearchRepository` | `features/search/domain/search_result.dart` |
+| `SignatureRepository` | `features/profile/domain/signature.dart` |
 | `Reachability` | `core/network/reachability.dart` (offline banner) |
+
+"Continue with Apple / Google" has two halves: the device gets a token
+from the provider (`SocialSignIn` in `core/services/social_sign_in.dart`,
+to implement with `sign_in_with_apple` / `google_sign_in` and override
+`socialSignInProvider` in `bootstrap.dart`), and your back-end verifies
+it (`AuthRepository.signInWithProvider`). With no `SocialSignIn` plugged,
+the buttons are hidden.
 
 ## Option A — your server speaks the REST contract
 

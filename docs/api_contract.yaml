@@ -49,6 +49,35 @@ paths:
         '422': { $ref: '#/components/responses/Error' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
+  /auth/social:
+    post:
+      tags: [auth]
+      security: []
+      summary: Continue with Apple / Google
+      description: >
+        The app gets an identity token from the provider's SDK on the
+        device and sends it here. Verify it with the provider's public
+        keys (audience = your app id), then find or create the account.
+        Apple sends the e-mail and name only the first time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, id_token, device_id]
+              properties:
+                provider: { type: string, enum: [apple, google] }
+                id_token: { type: string }
+                email: { type: string }
+                first_name: { type: string }
+                last_name: { type: string }
+                device_id: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/AuthResult' }
+        '401': { $ref: '#/components/responses/Error', description: '`invalid_credentials`: token invalid, expired or for another app' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
   /auth/sign-up:
     post:
       tags: [auth]
@@ -115,6 +144,34 @@ paths:
           description: Signed-in user
           content: { application/json: { schema: { $ref: '#/components/schemas/User' } } }
         '401': { $ref: '#/components/responses/Error' }
+
+  /me/signature:
+    get:
+      tags: [profile]
+      summary: The member's handwritten signature
+      responses:
+        '200':
+          description: Saved signature
+          content: { application/json: { schema: { $ref: '#/components/schemas/Signature' } } }
+        '404': { $ref: '#/components/responses/Error', description: 'None saved yet' }
+    put:
+      tags: [profile]
+      summary: Saves (replaces) the signature
+      description: >
+        Refuse with 422 on field `signature` when it has fewer than 12
+        points, is narrower than 15 % of the box, or has a point outside
+        0..1.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Signature' } } }
+      responses:
+        '200':
+          description: Saved signature
+          content: { application/json: { schema: { $ref: '#/components/schemas/Signature' } } }
+        '422': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [profile]
+      responses: { '204': { description: Deleted } }
 
   /home:
     get:
@@ -507,6 +564,24 @@ components:
           type: array
           items: { type: object, properties: { name: { type: string }, party: { type: [string, 'null'] } } }
         reminder_set: { type: boolean }
+    Signature:
+      type: object
+      required: [strokes]
+      description: >
+        Strokes of a finger signature. Each point is [x, y], both between
+        0 and 1, in a box 2.5 times wider than tall.
+      properties:
+        strokes:
+          type: array
+          items:
+            type: array
+            items:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items: { type: number }
+        updated_at: { type: string, format: date-time }
+
     Petition:
       type: object
       required: [id, title, summary, author, signatures, goal, status, deadline]

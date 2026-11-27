@@ -3,11 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/router/routes.dart';
-import '../../../core/config/demo_info.dart';
 import '../../../core/error/failure.dart';
+import '../../../core/services/services.dart';
 import '../../../core/state/action_controller.dart';
 import '../../../design_system/design_system.dart';
 import '../../../l10n/strings.dart';
+import '../../../shared/widgets/failure_view.dart';
 import '../../../shared/widgets/page_scaffold.dart';
 import '../application/session_controller.dart';
 import '../domain/auth_repository.dart';
@@ -46,17 +47,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     await ref.read(signInControllerProvider.notifier).submit(_email.text, _password.text);
   }
 
-  void _fill(String email, String password) {
-    _email.text = email;
-    _password.text = password;
-    setState(() => _local = const {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(signInControllerProvider);
     final notice = ref.watch(sessionControllerProvider).endedNotice;
-    final demo = ref.watch(demoInfoProvider);
+    final providers = ref.watch(socialSignInProvider).providers;
     final failure = state is ActionFailed<AuthResult> ? state.failure : null;
     final server = failure is ValidationFailure ? failure.fieldErrors : const <String, String>{};
     String? error(String f) => _local[f] ?? server[f];
@@ -124,34 +119,66 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
               ],
             ),
-            if (demo != null) ...[
+            if (providers.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              AppCard(
-                color: c.primarySoft,
-                bordered: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(AuthStrings.demoTitle, style: t.bodyStrong),
-                    Text(AuthStrings.demoBody, style: t.small.copyWith(color: c.inkSecondary)),
-                    const SizedBox(height: AppSpacing.xs),
-                    for (final email in demo.accounts)
-                      AppListTile(
-                        icon: Icons.person_outline_rounded,
-                        iconBackground: c.surface,
-                        title: email,
-                        subtitle: '${AuthStrings.password}: ${demo.password}',
-                        onTap: () => _fill(email, demo.password),
-                      ),
-                    for (final hint in demo.hints)
-                      Text(hint, style: t.caption.copyWith(color: c.inkSecondary)),
-                  ],
-                ),
-              ),
+              const _OrDivider(),
+              const SizedBox(height: AppSpacing.lg),
+              for (final p in providers) ...[
+                _SocialSignInButton(provider: p),
+                const SizedBox(height: AppSpacing.sm),
+              ],
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const Expanded(child: Divider()),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        child: Text(
+          AuthStrings.orDivider,
+          style: context.text.small.copyWith(color: context.colors.inkSecondary),
+        ),
+      ),
+      const Expanded(child: Divider()),
+    ],
+  );
+}
+
+/// One provider. Its own progress; a refusal shows in a snack bar, a
+/// cancel shows nothing.
+class _SocialSignInButton extends ConsumerWidget {
+  const _SocialSignInButton({required this.provider});
+  final SocialProvider provider;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = socialSignInControllerProvider(provider);
+    final state = ref.watch(controller);
+    ref.listen(controller, (_, next) {
+      if (next case ActionFailed(:final failure)) showFailureSnack(context, failure);
+    });
+    final (brand, label) = switch (provider) {
+      SocialProvider.apple => (SocialBrand.apple, AuthStrings.continueWithApple),
+      SocialProvider.google => (SocialBrand.google, AuthStrings.continueWithGoogle),
+    };
+    return SocialButton(
+      brand: brand,
+      label: label,
+      loading: state.isRunning,
+      onPressed: () {
+        FocusScope.of(context).unfocus();
+        ref.read(controller.notifier).submit();
+      },
     );
   }
 }

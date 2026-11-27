@@ -19,7 +19,7 @@ IconData _icon(DocumentType t) => switch (t) {
   DocumentType.birthCertificate => Icons.child_care_outlined,
   DocumentType.residence => Icons.home_outlined,
   DocumentType.taxNotice => Icons.receipt_long_outlined,
-  DocumentType.unknown => Icons.description_outlined,
+  DocumentType.unknown => AppIcons.documents,
 };
 
 /// Status pill: text + icon, never color alone.
@@ -55,7 +55,7 @@ class DocumentsScreen extends ConsumerWidget {
         onRefresh: notifier.refresh,
         onLoadMore: notifier.loadMore,
         empty: const StateView(
-          icon: Icons.description_outlined,
+          icon: AppIcons.documents,
           title: DocumentStrings.emptyTitle,
           message: DocumentStrings.emptyBody,
         ),
@@ -99,7 +99,7 @@ class DocumentScreen extends ConsumerWidget {
             AppSpacing.xxl,
           ),
           children: [
-            Icon(_icon(d.type), color: context.colors.primary, size: AppSizes.iconLg * 1.4),
+            AppIcon(_icon(d.type), color: context.colors.primary, size: AppSizes.iconLg * 1.4),
             const SizedBox(height: AppSpacing.sm),
             DetailHeader(title: d.title, pill: _StatusPill(d.status)),
             const SizedBox(height: AppSpacing.lg),

@@ -16,7 +16,7 @@ import '../application/services_providers.dart';
 import '../domain/public_service.dart';
 
 IconData _icon(ServiceCategory c) => switch (c) {
-  ServiceCategory.identity => Icons.badge_outlined,
+  ServiceCategory.identity => AppIcons.identity,
   ServiceCategory.family => Icons.family_restroom_outlined,
   ServiceCategory.housing => Icons.home_outlined,
   ServiceCategory.transport => Icons.directions_bus_outlined,
@@ -38,7 +38,7 @@ class ServicesScreen extends ConsumerWidget {
         onRefresh: notifier.refresh,
         onLoadMore: notifier.loadMore,
         empty: const StateView(
-          icon: Icons.grid_view_rounded,
+          icon: AppIcons.services,
           title: ServiceStrings.emptyTitle,
           message: ServiceStrings.emptyBody,
         ),
@@ -114,7 +114,7 @@ class _ServiceBodyState extends ConsumerState<_ServiceBody> {
         AppSpacing.xxl,
       ),
       children: [
-        Icon(_icon(s.category), color: c.primary, size: AppSizes.iconLg * 1.4),
+        AppIcon(_icon(s.category), color: c.primary, size: AppSizes.iconLg * 1.4),
         const SizedBox(height: AppSpacing.sm),
         DetailHeader(
           title: s.title,

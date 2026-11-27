@@ -52,7 +52,9 @@ class App extends ConsumerWidget {
             child: OpenRouteHook(
               child: AnalyticsHook(
                 child: OfflineBanner(
-                  child: LockHook(child: DevPanelHook(child: child!)),
+                  child: LockHook(
+                    child: DevPanelHook(child: _PrecacheIcons(child: child!)),
+                  ),
                 ),
               ),
             ),
@@ -61,4 +63,31 @@ class App extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Decodes the PNG icons once at start-up: tabs and buttons never show an
+/// empty square while an image loads.
+class _PrecacheIcons extends StatefulWidget {
+  const _PrecacheIcons({required this.child});
+  final Widget child;
+
+  @override
+  State<_PrecacheIcons> createState() => _PrecacheIconsState();
+}
+
+class _PrecacheIconsState extends State<_PrecacheIcons> {
+  bool _done = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_done) return;
+    _done = true;
+    for (final image in AppIcons.all) {
+      precacheImage(image, context, onError: (_, _) {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:elections_app/core/error/failure.dart';
 import 'package:elections_app/core/pagination/page.dart';
 import 'package:elections_app/core/session/session.dart';
+import 'package:elections_app/core/services/social_sign_in.dart';
 import 'package:elections_app/core/session/session_holder.dart';
 import 'package:elections_app/features/auth/data/mock/mock_auth_repository.dart';
 import 'package:elections_app/features/auth/domain/auth_repository.dart';
@@ -12,6 +13,8 @@ import 'package:elections_app/features/notifications/data/mock/mock_notification
 import 'package:elections_app/features/notifications/domain/app_notification.dart';
 import 'package:elections_app/features/petitions/data/mock/mock_petitions_repository.dart';
 import 'package:elections_app/features/petitions/domain/petition.dart';
+import 'package:elections_app/features/profile/data/mock/mock_signature_repository.dart';
+import 'package:elections_app/features/profile/data/signature_json.dart';
 import 'package:elections_app/mock/mock_server.dart';
 
 /// A server speaking the REST contract (docs/api_contract.yaml), backed by
@@ -21,7 +24,8 @@ final class SimulatorHttpAdapter implements HttpClientAdapter {
   SimulatorHttpAdapter(this.server, this.serverSession)
     : auth = MockAuthRepository(server),
       petitions = MockPetitionsRepository(server),
-      notifications = MockNotificationsRepository(server);
+      notifications = MockNotificationsRepository(server),
+      signatures = MockSignatureRepository(server);
 
   final MockServer server;
 
@@ -30,6 +34,7 @@ final class SimulatorHttpAdapter implements HttpClientAdapter {
   final MockAuthRepository auth;
   final MockPetitionsRepository petitions;
   final MockNotificationsRepository notifications;
+  final MockSignatureRepository signatures;
   int requests = 0;
 
   @override
@@ -53,6 +58,13 @@ final class SimulatorHttpAdapter implements HttpClientAdapter {
         case ('POST', '/auth/sign-in'):
           final r = await auth.signIn(email: '${body['email']}', password: '${body['password']}');
           return _json(200, _result(r));
+        case ('POST', '/auth/social'):
+          final r = await auth.signInWithProvider(SocialCredential(
+            provider: SocialProvider.values.byName('${body['provider']}'),
+            idToken: '${body['id_token']}',
+            email: body['email'] as String?,
+          ));
+          return _json(200, _result(r));
         case ('POST', '/auth/refresh'):
           final s = await server.renew(Session(
             userId: '',
@@ -73,6 +85,20 @@ final class SimulatorHttpAdapter implements HttpClientAdapter {
       final key = options.headers['Idempotency-Key'] as String?;
       return switch ((options.method, segments)) {
         ('GET', ['me']) => _json(200, _user(await auth.currentUser())),
+        ('GET', ['me', 'signature']) => switch (await signatures.get()) {
+          final sig? => _json(200, {
+            ...SignatureJson.encode(sig),
+            'updated_at': sig.updatedAt?.toUtc().toIso8601String(),
+          }),
+          null => _json(404, {'error': {'code': 'not_found', 'message': 'No signature.'}}),
+        },
+        ('PUT', ['me', 'signature']) => await signatures
+            .save(SignatureJson.decode(body))
+            .then((sig) => _json(200, {
+              ...SignatureJson.encode(sig),
+              'updated_at': sig.updatedAt?.toUtc().toIso8601String(),
+            })),
+        ('DELETE', ['me', 'signature']) => await signatures.delete().then((_) => _json(204, null)),
         ('GET', ['petitions']) => _json(200, _page(
           await petitions.list(cursor: options.uri.queryParameters['cursor']),
           _petition,
